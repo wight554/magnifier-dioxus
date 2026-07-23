@@ -1,3 +1,5 @@
+[Українською](README.uk.md)
+
 # Magnifier
 
 Android magnifier for reading small print. Tap the icon, get an immediately zoomed,
@@ -11,6 +13,17 @@ camera pipeline is Rust.
 
 Design and implementation notes: `docs/superpowers/specs/2026-07-23-magnifier-design.md`
 and `docs/superpowers/plans/2026-07-23-magnifier.md`.
+
+## Install
+
+The easiest way to install and keep this app updated is [Obtainium](https://github.com/ImranR98/Obtainium):
+
+1. Install Obtainium from its [releases page](https://github.com/ImranR98/Obtainium/releases) or F-Droid.
+2. In Obtainium, tap "Add App" and paste: `https://github.com/wight554/magnifier-dioxus`
+3. Obtainium finds the latest signed release APK automatically and installs it.
+4. Future updates show up in Obtainium like any other tracked app.
+
+Alternatively, download the APK directly from the [Releases page](https://github.com/wight554/magnifier-dioxus/releases) and install it manually (you'll need to allow installs from this source in Android's settings).
 
 ## Requirements
 
