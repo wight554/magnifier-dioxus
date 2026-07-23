@@ -102,3 +102,15 @@ pub fn mark_permission_asked() {
 pub fn was_permission_asked_before() -> bool {
     perm_asked_marker().exists()
 }
+
+const FLAG_KEEP_SCREEN_ON: i32 = 0x00000080;
+
+pub fn keep_screen_on() {
+    let _ = with_jni(|env, activity| {
+        let window = env
+            .call_method(activity, "getWindow", "()Landroid/view/Window;", &[])?
+            .l()?;
+        env.call_method(&window, "addFlags", "(I)V", &[JValue::Int(FLAG_KEEP_SCREEN_ON)])?;
+        Ok(())
+    });
+}

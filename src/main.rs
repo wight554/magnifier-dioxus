@@ -93,6 +93,7 @@ fn app() -> Element {
     // (state: Loading) is never interrupted by its own dialog appearing.
     #[cfg(target_os = "android")]
     {
+        use_hook(camera::keep_screen_on);
         let cam = cam.clone();
         let mut stopped_for_background = use_signal(|| false);
         dioxus::mobile::use_wry_event_handler(move |event, _target| {

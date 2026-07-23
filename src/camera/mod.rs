@@ -53,3 +53,8 @@ pub fn create() -> Arc<dyn CameraController> {
 pub fn app_files_dir() -> std::path::PathBuf {
     android::jni_glue::app_files_dir()
 }
+
+#[cfg(target_os = "android")]
+pub fn keep_screen_on() {
+    android::jni_glue::keep_screen_on();
+}
