@@ -1,0 +1,13 @@
+[application]
+name = "magnifier"
+
+[bundle]
+identifier = "com.magnifier.app"
+publisher = "magnifier"
+
+[android]
+min_sdk = 29
+features = ["android.hardware.camera", "android.hardware.camera.autofocus"]
+
+[android.permissions]
+"android.permission.CAMERA" = { description = "Live camera preview for magnification." }
