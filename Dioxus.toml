@@ -4,6 +4,7 @@ name = "magnifier"
 [bundle]
 identifier = "com.magnifier.app"
 publisher = "magnifier"
+icon = ["assets/icon.png"]
 
 [android]
 min_sdk = 29

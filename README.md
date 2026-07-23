@@ -1,0 +1,60 @@
+# Magnifier
+
+Android magnifier for reading small print. Tap the icon, get an immediately zoomed,
+live rear-camera view; toggle the flashlight; freeze the frame to hold it steady while
+reading. No menus in the critical path — everything is a tap on the overlay itself.
+
+Built with [Dioxus](https://dioxuslabs.com) 0.7: a transparent webview renders the
+control overlay, layered on top of a native `SurfaceView` fed directly by the NDK
+Camera2 API (`ndk-sys`). No Kotlin/Java source, no Gradle dependencies — the whole
+camera pipeline is Rust.
+
+Design and implementation notes: `docs/superpowers/specs/2026-07-23-magnifier-design.md`
+and `docs/superpowers/plans/2026-07-23-magnifier.md`.
+
+## Requirements
+
+- Android 10 (API 29) or newer, phone with a rear camera.
+- Rust, `dx` CLI (`cargo install dioxus-cli`), matching the `dioxus` version in
+  `Cargo.toml` (mismatched versions print a warning but usually still work).
+- For Android builds: Android SDK (platform 29+, platform-tools) and NDK 27+, plus a
+  JDK. Set `ANDROID_HOME`/`NDK_HOME`/`JAVA_HOME` and add
+  `$ANDROID_HOME/platform-tools` to `PATH`.
+- `rustup target add aarch64-linux-android`.
+
+## Desktop dev loop
+
+UI work only — the camera is a stub (gray box, fixed capabilities) so iteration doesn't
+need a device:
+
+```sh
+dx serve --desktop
+```
+
+## Android
+
+Debug build + install on a connected device:
+
+```sh
+dx serve --android          # builds, installs, and streams logs
+# or, to drive install/launch/logs yourself:
+dx build --android
+adb install -r target/dx/magnifier/debug/android/app/app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.magnifier.app/dev.dioxus.main.MainActivity
+```
+
+Release APK:
+
+```sh
+dx bundle --platform android --release
+```
+
+## Testing
+
+```sh
+cargo test          # settings serde + zoom math, desktop only
+```
+
+Camera/JNI code has no automated tests (emulator cameras don't behave like real
+hardware) — it's verified manually on a physical device. `adb logcat | grep magnifier`
+surfaces the app's own tracing through the camera thread and permission flow.
