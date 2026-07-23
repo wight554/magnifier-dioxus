@@ -6,6 +6,12 @@ identifier = "com.magnifier.app"
 publisher = "magnifier"
 icon = ["assets/icon.png"]
 
+[bundle.android]
+jks_file = "release.jks"
+jks_password = "REPLACED_AT_RELEASE_TIME_STOREPASS"
+key_alias = "magnifier-release"
+key_password = "REPLACED_AT_RELEASE_TIME_KEYPASS"
+
 [android]
 min_sdk = 29
 features = ["android.hardware.camera", "android.hardware.camera.autofocus"]

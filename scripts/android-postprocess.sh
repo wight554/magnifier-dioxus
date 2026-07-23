@@ -22,6 +22,11 @@ cp android-res/drawable-v24/ic_launcher_foreground.xml "${RES}/drawable-v24/ic_l
 mkdir -p "${RES}/values-uk"
 cp android-res/values-uk/strings.xml "${RES}/values-uk/strings.xml"
 
+if [ "$PROFILE" = "release" ]; then
+    VERSION_CODE=$(git rev-list --count HEAD)
+    sed -i '' "s/versionCode = 1/versionCode = ${VERSION_CODE}/" "${ROOT}/app/build.gradle.kts"
+fi
+
 GRADLE_TASK="assembleDebug"
 if [ "$PROFILE" = "release" ]; then
     GRADLE_TASK="assembleRelease"
