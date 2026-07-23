@@ -34,6 +34,9 @@ jobs:
       - name: Install dioxus-cli
         run: cargo install dioxus-cli --version 0.7.9 --locked
 
+      - name: Run desktop test suite
+        run: cargo test
+
       - name: Decode release keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.jks
 

@@ -20,9 +20,9 @@ fi
 cp Dioxus.toml Dioxus.toml.bak
 trap 'mv Dioxus.toml.bak Dioxus.toml' EXIT
 
-python3 - "$STOREPASS" "$KEYPASS" <<'PY'
-import sys, pathlib
-storepass, keypass = sys.argv[1], sys.argv[2]
+STOREPASS="$STOREPASS" KEYPASS="$KEYPASS" python3 - <<'PY'
+import os, pathlib
+storepass, keypass = os.environ["STOREPASS"], os.environ["KEYPASS"]
 p = pathlib.Path("Dioxus.toml")
 s = p.read_text()
 s = s.replace("REPLACED_AT_RELEASE_TIME_STOREPASS", storepass)
