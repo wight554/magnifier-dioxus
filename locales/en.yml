@@ -1,0 +1,14 @@
+torch: Torch
+freeze: Freeze
+unfreeze: Resume
+settings: Settings
+default_zoom: Default zoom
+torch_on_launch: Torch on at launch
+close: Close
+need_camera: Camera permission required
+grant: Grant permission
+open_settings_hint: "Permission denied. Enable the camera in app settings."
+camera_error: Camera error
+retry: Retry
+loading: "Loading…"
+app_name: Magnifier

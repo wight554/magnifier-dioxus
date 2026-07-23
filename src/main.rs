@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+rust_i18n::i18n!("locales", fallback = "en");
+
 mod camera;
 mod i18n;
 mod settings;
@@ -24,6 +26,8 @@ fn main() {
     env_logger::init();
     #[cfg(target_os = "android")]
     android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Info));
+
+    i18n::init();
 
     LaunchBuilder::new()
         .with_cfg(mobile! {

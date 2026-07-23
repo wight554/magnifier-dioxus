@@ -10,29 +10,26 @@ fn is_uk() -> bool {
     })
 }
 
-pub fn t(key: &str) -> &'static str {
-    let (uk, en) = match key {
-        "torch" => ("Ліхтарик", "Torch"),
-        "freeze" => ("Стоп-кадр", "Freeze"),
-        "unfreeze" => ("Продовжити", "Resume"),
-        "settings" => ("Налаштування", "Settings"),
-        "default_zoom" => ("Початкове збільшення", "Default zoom"),
-        "torch_on_launch" => ("Ліхтарик при запуску", "Torch on at launch"),
-        "close" => ("Закрити", "Close"),
-        "need_camera" => ("Потрібен дозвіл на камеру", "Camera permission required"),
-        "grant" => ("Надати дозвіл", "Grant permission"),
-        "open_settings_hint" => (
-            "Дозвіл заборонено. Увімкніть камеру в налаштуваннях застосунку.",
-            "Permission denied. Enable the camera in app settings.",
-        ),
-        "camera_error" => ("Помилка камери", "Camera error"),
-        "retry" => ("Повторити", "Retry"),
-        "loading" => ("Завантаження…", "Loading…"),
-        _ => ("?", "?"),
-    };
-    if is_uk() {
-        uk
-    } else {
-        en
+/// Must be called once before any `t()` call (locale doesn't change at runtime).
+pub fn init() {
+    rust_i18n::set_locale(if is_uk() { "uk" } else { "en" });
+}
+
+pub fn t(key: &str) -> String {
+    rust_i18n::t!(key).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn both_locales_have_every_key() {
+        for key in [
+            "torch", "freeze", "unfreeze", "settings", "default_zoom",
+            "torch_on_launch", "close", "need_camera", "grant",
+            "open_settings_hint", "camera_error", "retry", "loading", "app_name",
+        ] {
+            assert_ne!(rust_i18n::t!(key, locale = "en"), key, "missing en key: {key}");
+            assert_ne!(rust_i18n::t!(key, locale = "uk"), key, "missing uk key: {key}");
+        }
     }
 }

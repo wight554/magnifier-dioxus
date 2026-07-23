@@ -1,0 +1,14 @@
+torch: Ліхтарик
+freeze: Стоп-кадр
+unfreeze: Продовжити
+settings: Налаштування
+default_zoom: Початкове збільшення
+torch_on_launch: Ліхтарик при запуску
+close: Закрити
+need_camera: Потрібен дозвіл на камеру
+grant: Надати дозвіл
+open_settings_hint: "Дозвіл заборонено. Увімкніть камеру в налаштуваннях застосунку."
+camera_error: Помилка камери
+retry: Повторити
+loading: "Завантаження…"
+app_name: Лупа
