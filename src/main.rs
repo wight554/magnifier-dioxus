@@ -22,6 +22,8 @@ static MAIN_CSS: Asset = asset!("/assets/main.css");
 fn main() {
     #[cfg(not(target_os = "android"))]
     env_logger::init();
+    #[cfg(target_os = "android")]
+    android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Info));
     dioxus::launch(app);
 }
 

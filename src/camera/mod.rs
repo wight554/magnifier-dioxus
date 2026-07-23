@@ -2,9 +2,8 @@ pub mod zoom;
 
 #[cfg(not(target_os = "android"))]
 mod stub;
-// #[cfg(target_os = "android")]
-// mod android;
-// enabled in Task 6 once src/camera/android/mod.rs exists
+#[cfg(target_os = "android")]
+mod android;
 
 use std::sync::Arc;
 
@@ -41,6 +40,6 @@ pub fn create() -> Arc<dyn CameraController> {
     }
     #[cfg(target_os = "android")]
     {
-        compile_error!("android camera controller not wired yet (see Task 6)")
+        Arc::new(android::AndroidCamera::new())
     }
 }
