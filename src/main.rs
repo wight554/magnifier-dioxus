@@ -42,6 +42,7 @@ fn start_camera(
     spawn(async move {
         use futures_util::StreamExt;
         while let Some(ev) = rx.next().await {
+            log::info!("magnifier: ui received {ev:?}");
             match ev {
                 CameraEvent::Ready(c) => {
                     caps.set(c);
@@ -130,6 +131,7 @@ fn app() -> Element {
                         on_freeze_toggle: {
                             let cam = cam.clone();
                             move |_| {
+                                log::info!("magnifier: freeze toggle clicked, state={:?}", state());
                                 if state() == AppState::Frozen {
                                     cam.unfreeze();
                                     cam.set_torch(torch());

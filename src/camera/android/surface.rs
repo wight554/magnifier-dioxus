@@ -14,6 +14,7 @@ pub fn create_surface_view(width: i32, height: i32) -> anyhow::Result<SurfaceHan
     let (tx, rx) = mpsc::channel();
 
     wry::prelude::dispatch(move |env, activity, _webview| {
+        log::info!("magnifier: surface dispatch closure running");
         let result = (|| -> jni::errors::Result<(jni::objects::GlobalRef, jni::objects::GlobalRef)> {
             let sv = env.new_object(
                 "android/view/SurfaceView",
@@ -37,6 +38,7 @@ pub fn create_surface_view(width: i32, height: i32) -> anyhow::Result<SurfaceHan
                     &[JValue::Int(ANDROID_R_ID_CONTENT)],
                 )?
                 .l()?;
+            let child_count_before = env.call_method(&content, "getChildCount", "()I", &[])?.i()?;
             // index 0 draws first -> below the webview that setContentView already installed
             env.call_method(
                 &content,
@@ -44,6 +46,10 @@ pub fn create_surface_view(width: i32, height: i32) -> anyhow::Result<SurfaceHan
                 "(Landroid/view/View;I)V",
                 &[JValue::Object(&sv), JValue::Int(0)],
             )?;
+            let child_count_after = env.call_method(&content, "getChildCount", "()I", &[])?.i()?;
+            log::info!(
+                "magnifier: content childCount before={child_count_before} after={child_count_after}"
+            );
             Ok((env.new_global_ref(&sv)?, env.new_global_ref(&holder)?))
         })();
         let _ = tx.send(result);
@@ -53,8 +59,8 @@ pub fn create_surface_view(width: i32, height: i32) -> anyhow::Result<SurfaceHan
 
     // No SurfaceHolder.Callback is possible from pure JNI (can't implement a Java
     // interface without a real class), so poll from this thread until valid instead.
-    for _ in 0..100 {
-        let valid = super::jni_glue::with_jni(|env, _| {
+    for i in 0..100 {
+        let (valid, surface_was_null) = super::jni_glue::with_jni(|env, _| {
             let surface = env
                 .call_method(
                     holder_ref.as_obj(),
@@ -64,15 +70,25 @@ pub fn create_surface_view(width: i32, height: i32) -> anyhow::Result<SurfaceHan
                 )?
                 .l()?;
             if surface.is_null() {
-                return Ok(None);
+                return Ok((None, true));
             }
             let is_valid = env.call_method(&surface, "isValid", "()Z", &[])?.z()?;
             if is_valid {
-                Ok(Some(env.new_global_ref(&surface)?))
+                Ok((Some(env.new_global_ref(&surface)?), false))
             } else {
-                Ok(None)
+                Ok((None, false))
             }
         })?;
+        if i % 10 == 0 {
+            let attached = super::jni_glue::with_jni(|env, _| {
+                env.call_method(view_ref.as_obj(), "isAttachedToWindow", "()Z", &[])?
+                    .z()
+            })
+            .unwrap_or(false);
+            log::info!(
+                "magnifier: surface poll #{i}: null={surface_was_null} attached_to_window={attached}"
+            );
+        }
         if let Some(surface_ref) = valid {
             let native_window = super::jni_glue::with_jni(|env, _| unsafe {
                 Ok(ndk_sys::ANativeWindow_fromSurface(
