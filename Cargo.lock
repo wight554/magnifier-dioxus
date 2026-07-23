@@ -2540,6 +2540,7 @@ name = "magnifier"
 version = "0.1.0"
 dependencies = [
  "android_logger",
+ "anyhow",
  "dioxus",
  "dirs",
  "env_logger",
@@ -2552,6 +2553,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sys-locale",
+ "wry",
 ]
 
 [[package]]

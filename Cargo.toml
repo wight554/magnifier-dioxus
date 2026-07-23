@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.104"
 dioxus = { version = "0.7.9", default-features = false, features = ["asset", "document", "hooks", "html", "launch", "logger", "macro", "mounted", "signals", "warnings"] }
 dirs = "6.0.0"
 env_logger = "0.11.11"
@@ -24,3 +25,4 @@ android_logger = "0.14"
 jni = "0.21"
 ndk-context = "0.1"
 ndk-sys = { version = "0.6", features = ["nativewindow"] }
+wry = { version = "0.53", default-features = false }

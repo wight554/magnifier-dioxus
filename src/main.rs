@@ -24,7 +24,12 @@ fn main() {
     env_logger::init();
     #[cfg(target_os = "android")]
     android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Info));
-    dioxus::launch(app);
+
+    LaunchBuilder::new()
+        .with_cfg(mobile! {
+            dioxus::mobile::Config::new().with_background_color((0, 0, 0, 0))
+        })
+        .launch(app);
 }
 
 fn start_camera(
