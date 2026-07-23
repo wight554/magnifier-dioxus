@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+mod camera;
 mod settings;
 
 fn main() {
