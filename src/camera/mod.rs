@@ -43,3 +43,13 @@ pub fn create() -> Arc<dyn CameraController> {
         Arc::new(android::AndroidCamera::new())
     }
 }
+
+/// The app's private, writable internal storage directory.
+///
+/// `dirs::data_local_dir()` has no Android support - it falls into the generic Unix
+/// branch, which relies on `$HOME` (unset for Android app processes), so it silently
+/// resolves to an unwritable path. Use JNI's `Context.getFilesDir()` instead.
+#[cfg(target_os = "android")]
+pub fn app_files_dir() -> std::path::PathBuf {
+    android::jni_glue::app_files_dir()
+}

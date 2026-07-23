@@ -25,4 +25,5 @@ android_logger = "0.14"
 jni = "0.21"
 ndk-context = "0.1"
 ndk-sys = { version = "0.6", features = ["nativewindow"] }
+tao = { version = "0.34", default-features = false }
 wry = { version = "0.53", default-features = false }

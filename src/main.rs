@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, PartialEq)]
 enum AppState {
     Loading,
-    NoPermission,
+    NoPermission { permanently_denied: bool },
     Active,
     Frozen,
     Error(String),
@@ -50,7 +50,13 @@ fn start_camera(
                 }
                 CameraEvent::Error(e) => {
                     if e == "no permission" {
-                        state.set(AppState::NoPermission);
+                        state.set(AppState::NoPermission {
+                            permanently_denied: false,
+                        });
+                    } else if e == "no permission permanent" {
+                        state.set(AppState::NoPermission {
+                            permanently_denied: true,
+                        });
                     } else {
                         state.set(AppState::Error(e));
                     }
@@ -80,6 +86,38 @@ fn app() -> Element {
         move || start_camera(cam.clone(), state, caps)
     });
 
+    // tao's Suspended/Resumed map directly to raw Android onPause/onResume, which fire
+    // for ANY focus loss - including our own permission dialog, not just real
+    // backgrounding. Only stop while genuinely showing the live preview, and only
+    // restart if we're the ones who stopped it, so an in-flight permission request
+    // (state: Loading) is never interrupted by its own dialog appearing.
+    #[cfg(target_os = "android")]
+    {
+        let cam = cam.clone();
+        let mut stopped_for_background = use_signal(|| false);
+        dioxus::mobile::use_wry_event_handler(move |event, _target| {
+            use tao::event::Event;
+            match event {
+                Event::Suspended => {
+                    if matches!(state(), AppState::Active | AppState::Frozen) {
+                        log::info!("magnifier: app suspended while active, stopping camera");
+                        cam.stop();
+                        stopped_for_background.set(true);
+                    }
+                }
+                Event::Resumed => {
+                    if stopped_for_background() {
+                        log::info!("magnifier: app resumed, restarting camera");
+                        stopped_for_background.set(false);
+                        state.set(AppState::Loading);
+                        start_camera(cam.clone(), state, caps);
+                    }
+                }
+                _ => {}
+            }
+        });
+    }
+
     use_effect({
         let cam = cam.clone();
         move || cam.set_zoom(zoom())
@@ -95,10 +133,24 @@ fn app() -> Element {
             AppState::Loading => rsx! {
                 div { class: "center-msg", {i18n::t("loading")} }
             },
-            AppState::NoPermission => rsx! {
+            AppState::NoPermission { permanently_denied } => rsx! {
                 div { class: "center-msg",
                     p { {i18n::t("need_camera")} }
-                    p { class: "hint", {i18n::t("open_settings_hint")} }
+                    if permanently_denied {
+                        p { class: "hint", {i18n::t("open_settings_hint")} }
+                    } else {
+                        button {
+                            class: "big-btn",
+                            onclick: {
+                                let cam = cam.clone();
+                                move |_| {
+                                    state.set(AppState::Loading);
+                                    start_camera(cam.clone(), state, caps);
+                                }
+                            },
+                            {i18n::t("grant")}
+                        }
+                    }
                 }
             },
             AppState::Error(e) => rsx! {

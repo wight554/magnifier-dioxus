@@ -44,3 +44,61 @@ pub fn request_camera_permission() {
     });
 }
 
+pub fn should_show_rationale() -> bool {
+    with_jni(|env, activity| {
+        let perm = env.new_string(CAMERA_PERM)?;
+        env.call_method(
+            activity,
+            "shouldShowRequestPermissionRationale",
+            "(Ljava/lang/String;)Z",
+            &[JValue::Object(&perm)],
+        )?
+        .z()
+    })
+    .unwrap_or(false)
+}
+
+static APP_FILES_DIR: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+
+/// The app's private, writable internal storage directory (`Context.getFilesDir()`).
+///
+/// `dirs::data_local_dir()` has no Android support and silently resolves to an
+/// unwritable path there (it falls into the generic Unix branch, which relies on
+/// `$HOME`, unset for Android app processes) - this is the real thing.
+pub fn app_files_dir() -> std::path::PathBuf {
+    APP_FILES_DIR
+        .get_or_init(|| {
+            with_jni(|env, activity| {
+                let dir = env
+                    .call_method(activity, "getFilesDir", "()Ljava/io/File;", &[])?
+                    .l()?;
+                let path_str = env
+                    .call_method(&dir, "getAbsolutePath", "()Ljava/lang/String;", &[])?
+                    .l()?;
+                let jstring = jni::objects::JString::from(path_str);
+                let s: String = env.get_string(&jstring)?.into();
+                Ok(std::path::PathBuf::from(s))
+            })
+            .unwrap_or_else(|e| {
+                log::error!("magnifier: getFilesDir failed: {e:?}, falling back");
+                std::path::PathBuf::from("/data/local/tmp")
+            })
+        })
+        .clone()
+}
+
+fn perm_asked_marker() -> std::path::PathBuf {
+    app_files_dir().join("perm_asked")
+}
+
+pub fn mark_permission_asked() {
+    let marker = perm_asked_marker();
+    if let Some(parent) = marker.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::write(marker, b"1");
+}
+
+pub fn was_permission_asked_before() -> bool {
+    perm_asked_marker().exists()
+}

@@ -1,5 +1,5 @@
 mod cam2;
-mod jni_glue;
+pub(crate) mod jni_glue;
 mod surface;
 
 use super::*;
@@ -41,19 +41,32 @@ impl CameraController for AndroidCamera {
         std::thread::spawn(move || {
             log::info!("magnifier: camera thread started");
             if !jni_glue::has_camera_permission() {
-                log::info!("magnifier: requesting camera permission");
+                let asked_before = jni_glue::was_permission_asked_before();
+                jni_glue::mark_permission_asked();
+                log::info!("magnifier: requesting camera permission (asked_before={asked_before})");
                 jni_glue::request_camera_permission();
-                for _ in 0..120 {
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                // No native callback exists for the permission-result dialog (would need
+                // our own Kotlin), so poll. A denial should surface quickly rather than
+                // making the user wait out a long timeout meant for granting.
+                for _ in 0..20 {
+                    std::thread::sleep(std::time::Duration::from_millis(250));
                     if jni_glue::has_camera_permission() {
                         break;
                     }
                 }
-            }
-            if !jni_glue::has_camera_permission() {
-                log::error!("magnifier: camera permission not granted");
-                let _ = events.unbounded_send(CameraEvent::Error("no permission".into()));
-                return;
+                if !jni_glue::has_camera_permission() {
+                    let permanently_denied = asked_before && !jni_glue::should_show_rationale();
+                    log::error!(
+                        "magnifier: camera permission not granted, permanently_denied={permanently_denied}"
+                    );
+                    let msg = if permanently_denied {
+                        "no permission permanent"
+                    } else {
+                        "no permission"
+                    };
+                    let _ = events.unbounded_send(CameraEvent::Error(msg.into()));
+                    return;
+                }
             }
             log::info!("magnifier: camera permission granted");
 

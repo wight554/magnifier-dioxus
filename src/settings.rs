@@ -31,9 +31,16 @@ pub fn save(path: &Path, s: &Settings) -> std::io::Result<()> {
 }
 
 pub fn settings_path() -> PathBuf {
-    dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("magnifier/settings.json")
+    #[cfg(target_os = "android")]
+    {
+        crate::camera::app_files_dir().join("settings.json")
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("magnifier/settings.json")
+    }
 }
 
 #[cfg(test)]
