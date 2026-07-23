@@ -1834,26 +1834,104 @@ fi
 
 ---
 
-### Task 19: Obtainium-trackable releases
+### Task 19: Obtainium-trackable releases, built by GitHub Actions
 
-Testing feedback: distribute through Obtainium (tracks GitHub Releases directly, no Play Store / F-Droid needed).
+Testing feedback: distribute through Obtainium (tracks GitHub Releases directly, no Play Store / F-Droid needed) — and per follow-up direction, releases must be automated end-to-end (push a tag, CI builds/signs/publishes), not a locally-run script.
+
+This requires the release keystore (Task 18) to exist as GitHub Actions secrets, since CI has no access to the local, gitignored `release.jks` or the passwords only the user knows. `scripts/release-apk.sh` currently always interactively prompts for both passwords (`read -srp`) — it must become dual-mode: use `STOREPASS`/`KEYPASS` env vars if already set (CI), otherwise prompt (local/manual use is still valid — e.g. testing a release build without pushing a tag). The workflow decodes a base64-encoded keystore secret to `release.jks` before calling the (now dual-mode) script, so the actual signing/build/postprocess logic stays in one place, not duplicated between a local script and CI YAML.
+
+Runner choice: `macos-latest`, not `ubuntu-latest`. `scripts/android-postprocess.sh`'s versionCode patch uses `sed -i ''` (BSD sed, macOS-specific — flagged and accepted in Task 18's review as a known limitation since this project has only ever targeted macOS). Matching the runner OS avoids adding Linux-sed portability handling as unplanned scope.
 
 **Files:**
-- No new source files — this is a process, documented fully in Task 20's README. This task just proves the process end-to-end once.
+- Modify: `scripts/release-apk.sh` (dual-mode password input)
+- Create: `.github/workflows/release.yml`
+- Modify: `README.md`, `README.uk.md` (document the one-time GitHub secrets setup)
 
-- [ ] **Step 1: Decide on a version, bump it** — edit `Cargo.toml`'s `version` field (e.g. `0.1.0` → `0.2.0`) to reflect this batch of enhancements. This becomes the APK's `versionName` (Task 18's `versionCode` bump, from commit count, handles the machine-readable ordering Obtainium/Android actually check).
+- [ ] **Step 1: Make `scripts/release-apk.sh` dual-mode** — replace its two `read -srp` lines:
 
-- [ ] **Step 2: Commit the version bump** — `git add Cargo.toml Cargo.lock && git commit -m "chore: bump version to 0.2.0"`.
+```bash
+read -srp "Keystore password: " STOREPASS; echo
+read -srp "Key password: " KEYPASS; echo
+```
+with
+```bash
+if [ -z "${STOREPASS:-}" ]; then
+    read -srp "Keystore password: " STOREPASS; echo
+fi
+if [ -z "${KEYPASS:-}" ]; then
+    read -srp "Key password: " KEYPASS; echo
+fi
+```
 
-- [ ] **Step 3: Build the signed release APK (USER RUNS THIS)** — `./scripts/release-apk.sh` (from Task 18).
+- [ ] **Step 2: Create `.github/workflows/release.yml`**:
 
-- [ ] **Step 4: Tag and push (USER RUNS THIS — confirm before pushing tags)** — `git tag v0.2.0 && git push origin v0.2.0` (after confirming with the user; pushing tags is a shared/visible action).
+```yaml
+name: Release
 
-- [ ] **Step 5: Create a GitHub Release with the APK attached (USER RUNS THIS)** — `gh release create v0.2.0 target/dx/magnifier/release/android/app/app/build/outputs/apk/release/app-release.apk --title "v0.2.0" --notes "<what changed>"`.
+on:
+  push:
+    tags:
+      - "v*"
 
-- [ ] **Step 6: Add to Obtainium (USER RUNS THIS, on their phone)** — in Obtainium: "Add App" → paste the GitHub repo URL (`https://github.com/wight554/magnifier-dioxus`) → source type "GitHub" → it should auto-detect the release APK asset. Confirm Obtainium shows the installed app and reports "up to date" against the tag just created.
+permissions:
+  contents: write
 
-- [ ] **Step 7: No code commit for this task** (process-only) — but note the release workflow in the plan's completion so Task 20's README reflects the actual, verified steps rather than a guess.
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # scripts/android-postprocess.sh derives versionCode from `git rev-list --count HEAD`
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android SDK platform, build-tools, NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-29" "build-tools;34.0.0" "ndk;27.0.12077973"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+
+      - name: Install dioxus-cli
+        run: cargo install dioxus-cli --version 0.7.9 --locked
+
+      - name: Decode release keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.jks
+
+      - name: Build signed release APK
+        env:
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./scripts/release-apk.sh
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            target/dx/magnifier/release/android/app/app/build/outputs/apk/release/app-release.apk \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
+```
+
+(GitHub-hosted macOS runners preinstall an Android SDK at `$ANDROID_HOME` with `cmdline-tools` already present — this installs only the specific platform/build-tools/NDK versions this project needs, matching the local dev setup.)
+
+- [ ] **Step 3: Document one-time secrets setup in `README.md`** — add a subsection under `## Install` (or a new `## Releasing` section) covering: generate the keystore once locally (`scripts/generate-release-keystore.sh`, from Task 18), then `base64 -i release.jks | pbcopy` and paste as the repo secret `ANDROID_KEYSTORE_BASE64` (GitHub repo → Settings → Secrets and variables → Actions), plus `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` as two more secrets holding the plain passwords chosen when the keystore was generated. After that one-time setup, a release is just: bump `Cargo.toml`'s version, commit, `git tag vX.Y.Z && git push origin vX.Y.Z` — CI does the rest.
+
+- [ ] **Step 4: Mirror Step 3's documentation in `README.uk.md`**, same structure, translated.
+
+- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: automate signed releases via GitHub Actions"`
+
+- [ ] **Step 6: First real release (USER RUNS THIS — needs the one-time secrets set up first, and confirm before pushing a tag, since it triggers a public release)** — after the three secrets exist in the repo: `git tag v0.2.0 && git push origin v0.2.0`, then watch the Actions run, then confirm the release appears at the repo's Releases page with `app-release.apk` attached.
+
+- [ ] **Step 7: Add to Obtainium (USER RUNS THIS, on their phone)** — in Obtainium: "Add App" → paste the GitHub repo URL → source type "GitHub" → confirm it finds the release APK and reports "up to date" against the tag just created.
 
 ---
 
