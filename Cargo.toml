@@ -4,13 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-dioxus = { version = "0.7.9", default-features = false, features = ["document", "hooks", "html", "launch", "logger", "macro", "mounted", "signals", "warnings"] }
+dioxus = { version = "0.7.9", default-features = false, features = ["asset", "document", "hooks", "html", "launch", "logger", "macro", "mounted", "signals", "warnings"] }
 dirs = "6.0.0"
 env_logger = "0.11.11"
 futures-channel = "0.3.33"
+futures-util = "0.3.33"
 log = "0.4.33"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+sys-locale = "0.3.2"
 
 [features]
 default = ["desktop"]
