@@ -19,6 +19,9 @@ fi
 cp android-res/drawable/ic_launcher_background.xml "${RES}/drawable/ic_launcher_background.xml"
 cp android-res/drawable-v24/ic_launcher_foreground.xml "${RES}/drawable-v24/ic_launcher_foreground.xml"
 
+mkdir -p "${RES}/values-uk"
+cp android-res/values-uk/strings.xml "${RES}/values-uk/strings.xml"
+
 GRADLE_TASK="assembleDebug"
 if [ "$PROFILE" = "release" ]; then
     GRADLE_TASK="assembleRelease"
