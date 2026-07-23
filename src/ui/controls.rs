@@ -73,23 +73,6 @@ pub fn Overlay(
                 ontouchend: move |_| hold_gen.with_mut(|g| *g += 1),
             }
 
-            div { id: "top-bar",
-                if caps.has_torch {
-                    button {
-                        class: if torch() { "big-btn active" } else { "big-btn" },
-                        onclick: move |_| torch.toggle(),
-                        aria_label: i18n::t("torch"),
-                        Icon { path: ICON_FLASH, size: 32 }
-                    }
-                }
-                button {
-                    class: "big-btn",
-                    onclick: move |_| show_settings.set(true),
-                    aria_label: i18n::t("settings"),
-                    Icon { path: ICON_SETTINGS, size: 32 }
-                }
-            }
-
             div { id: "bottom-bar",
                 input {
                     id: "zoom-slider",
@@ -103,11 +86,27 @@ pub fn Overlay(
                         }
                     },
                 }
-                button {
-                    class: if frozen { "big-btn freeze active" } else { "big-btn freeze" },
-                    onclick: move |_| on_freeze_toggle.call(()),
-                    aria_label: if frozen { i18n::t("unfreeze") } else { i18n::t("freeze") },
-                    Icon { path: if frozen { ICON_PLAY } else { ICON_PAUSE }, size: 32 }
+                div { id: "action-row",
+                    if caps.has_torch {
+                        button {
+                            class: if torch() { "big-btn active" } else { "big-btn" },
+                            onclick: move |_| torch.toggle(),
+                            aria_label: i18n::t("torch"),
+                            Icon { path: ICON_FLASH, size: 32 }
+                        }
+                    }
+                    button {
+                        class: if frozen { "big-btn freeze active" } else { "big-btn freeze" },
+                        onclick: move |_| on_freeze_toggle.call(()),
+                        aria_label: if frozen { i18n::t("unfreeze") } else { i18n::t("freeze") },
+                        Icon { path: if frozen { ICON_PLAY } else { ICON_PAUSE }, size: 32 }
+                    }
+                    button {
+                        class: "big-btn",
+                        onclick: move |_| show_settings.set(true),
+                        aria_label: i18n::t("settings"),
+                        Icon { path: ICON_SETTINGS, size: 32 }
+                    }
                 }
             }
 
@@ -136,6 +135,7 @@ fn SettingsSheet(
         div { id: "settings-sheet",
             h2 { {i18n::t("settings")} }
             label {
+                class: "stacked",
                 {i18n::t("default_zoom")}
                 input {
                     r#type: "range",

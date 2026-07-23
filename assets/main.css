@@ -12,7 +12,6 @@ html, body, #main {
     justify-content: space-between;
     touch-action: none;
 }
-#top-bar { display: flex; justify-content: space-between; padding: 12px; }
 #bottom-bar {
     display: flex;
     flex-direction: column;
@@ -20,21 +19,22 @@ html, body, #main {
     padding: 16px;
     padding-bottom: 32px;
 }
+#action-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.big-btn.freeze { flex: 1; max-width: 120px; }
 #preview-zone { flex: 1; touch-action: none; }
 
 .big-btn {
-    min-width: 72px;
-    min-height: 72px;
-    font-size: 32px;
+    min-width: 64px;
+    min-height: 64px;
+    font-size: 28px;
     border-radius: 16px;
     border: 3px solid #fff;
     background: rgba(0, 0, 0, 0.55);
     color: #fff;
 }
 .big-btn.active { background: #ffd400; color: #000; border-color: #ffd400; }
-.big-btn.freeze { width: 100%; font-size: 28px; font-weight: 700; }
 
-#zoom-slider { width: 100%; height: 48px; accent-color: #ffd400; }
+#zoom-slider { width: 100%; height: 40px; accent-color: #ffd400; }
 
 .center-msg {
     position: fixed;
@@ -66,4 +66,5 @@ html, body, #main {
     gap: 20px;
     font-size: 24px;
 }
-#settings-sheet label { display: flex; flex-direction: column; gap: 8px; }
+#settings-sheet label { display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; }
+#settings-sheet label.stacked { flex-direction: column; align-items: stretch; }
