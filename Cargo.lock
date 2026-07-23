@@ -2306,6 +2306,9 @@ name = "magnifier"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "dirs",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

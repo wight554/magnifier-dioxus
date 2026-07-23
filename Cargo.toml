@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 dioxus = { version = "0.7.9", default-features = false, features = ["document", "hooks", "html", "launch", "logger", "macro", "mounted", "signals", "warnings"] }
+dirs = "6.0.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 
 [features]
 default = ["desktop"]

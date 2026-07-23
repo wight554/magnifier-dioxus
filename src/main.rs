@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+mod settings;
+
 fn main() {
     dioxus::launch(app);
 }
