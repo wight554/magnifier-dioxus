@@ -62,6 +62,34 @@ Release APK:
 dx bundle --platform android --release
 ```
 
+## Releasing
+
+Releases are built and signed automatically by GitHub Actions: pushing a tag matching
+`v*` triggers `.github/workflows/release.yml`, which builds a signed release APK on a
+macOS runner and publishes it to the repo's [Releases page](https://github.com/wight554/magnifier-dioxus/releases)
+— which is what Obtainium tracks.
+
+One-time setup, before the first automated release:
+
+1. Generate the release keystore locally (if you haven't already, from Task 18):
+   `./scripts/generate-release-keystore.sh`.
+2. Base64-encode it and copy to the clipboard: `base64 -i release.jks | pbcopy`.
+3. In the GitHub repo, go to Settings → Secrets and variables → Actions, and add three
+   repository secrets:
+   - `ANDROID_KEYSTORE_BASE64` — paste the base64 output from step 2.
+   - `ANDROID_KEYSTORE_PASSWORD` — the keystore password chosen when generating it.
+   - `ANDROID_KEY_PASSWORD` — the key password chosen when generating it.
+
+After that one-time setup, cutting a release is just:
+
+```sh
+# bump the version in Cargo.toml, then:
+git add Cargo.toml && git commit -m "chore: bump version to vX.Y.Z"
+git tag vX.Y.Z && git push origin vX.Y.Z
+```
+
+CI does the rest — build, sign, and publish the APK to the Releases page.
+
 ## Testing
 
 ```sh

@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # scripts/android-postprocess.sh derives versionCode from `git rev-list --count HEAD`
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android SDK platform, build-tools, NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-29" "build-tools;34.0.0" "ndk;27.0.12077973"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+
+      - name: Install dioxus-cli
+        run: cargo install dioxus-cli --version 0.7.9 --locked
+
+      - name: Decode release keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.jks
+
+      - name: Build signed release APK
+        env:
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./scripts/release-apk.sh
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            target/dx/magnifier/release/android/app/app/build/outputs/apk/release/app-release.apk \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

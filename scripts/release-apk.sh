@@ -10,8 +10,12 @@ if [ ! -f release.jks ]; then
     exit 1
 fi
 
-read -srp "Keystore password: " STOREPASS; echo
-read -srp "Key password: " KEYPASS; echo
+if [ -z "${STOREPASS:-}" ]; then
+    read -srp "Keystore password: " STOREPASS; echo
+fi
+if [ -z "${KEYPASS:-}" ]; then
+    read -srp "Key password: " KEYPASS; echo
+fi
 
 cp Dioxus.toml Dioxus.toml.bak
 trap 'mv Dioxus.toml.bak Dioxus.toml' EXIT

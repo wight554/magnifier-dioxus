@@ -66,6 +66,35 @@ adb shell am start -n com.magnifier.app/dev.dioxus.main.MainActivity
 dx bundle --platform android --release
 ```
 
+## Публікація релізів
+
+Релізи збираються та підписуються автоматично за допомогою GitHub Actions: пуш тега,
+що відповідає шаблону `v*`, запускає `.github/workflows/release.yml`, який збирає
+підписаний реліз APK на macOS-раннері та публікує його на
+[сторінці релізів](https://github.com/wight554/magnifier-dioxus/releases) репозиторію
+— саме її відстежує Obtainium.
+
+Одноразове налаштування перед першим автоматичним релізом:
+
+1. Згенеруйте keystore для релізу локально (якщо ще не зроблено, див. Task 18):
+   `./scripts/generate-release-keystore.sh`.
+2. Закодуйте його в base64 і скопіюйте в буфер обміну: `base64 -i release.jks | pbcopy`.
+3. У репозиторії на GitHub перейдіть у Settings → Secrets and variables → Actions і
+   додайте три секрети репозиторію:
+   - `ANDROID_KEYSTORE_BASE64` — вставте результат base64 із кроку 2.
+   - `ANDROID_KEYSTORE_PASSWORD` — пароль keystore, обраний під час його генерації.
+   - `ANDROID_KEY_PASSWORD` — пароль ключа, обраний під час генерації.
+
+Після цього одноразового налаштування випуск релізу зводиться до:
+
+```sh
+# оновіть версію в Cargo.toml, потім:
+git add Cargo.toml && git commit -m "chore: bump version to vX.Y.Z"
+git tag vX.Y.Z && git push origin vX.Y.Z
+```
+
+Решту робить CI — збирає, підписує та публікує APK на сторінці релізів.
+
 ## Тестування
 
 ```sh
