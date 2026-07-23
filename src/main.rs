@@ -4,6 +4,8 @@ mod camera;
 mod settings;
 
 fn main() {
+    #[cfg(not(target_os = "android"))]
+    env_logger::init();
     dioxus::launch(app);
 }
 
