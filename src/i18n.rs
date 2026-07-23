@@ -23,13 +23,15 @@ pub fn t(key: &str) -> String {
 mod tests {
     #[test]
     fn both_locales_have_every_key() {
-        for key in [
-            "torch", "freeze", "unfreeze", "settings", "default_zoom",
-            "torch_on_launch", "close", "need_camera", "grant",
-            "open_settings_hint", "camera_error", "retry", "loading", "app_name",
-        ] {
-            assert_ne!(rust_i18n::t!(key, locale = "en"), key, "missing en key: {key}");
-            assert_ne!(rust_i18n::t!(key, locale = "uk"), key, "missing uk key: {key}");
-        }
+        let en: std::collections::BTreeMap<String, String> =
+            serde_yaml::from_str(include_str!("../locales/en.yml")).unwrap();
+        let uk: std::collections::BTreeMap<String, String> =
+            serde_yaml::from_str(include_str!("../locales/uk.yml")).unwrap();
+        let en_keys: std::collections::BTreeSet<_> = en.keys().collect();
+        let uk_keys: std::collections::BTreeSet<_> = uk.keys().collect();
+        assert_eq!(
+            en_keys, uk_keys,
+            "locales/en.yml and locales/uk.yml must have identical key sets"
+        );
     }
 }
