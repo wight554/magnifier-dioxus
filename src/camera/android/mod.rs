@@ -1,3 +1,4 @@
+mod cam2;
 mod jni_glue;
 mod surface;
 
