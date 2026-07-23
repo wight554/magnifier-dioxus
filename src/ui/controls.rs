@@ -33,6 +33,7 @@ pub fn Overlay(
     on_freeze_toggle: EventHandler<()>,
 ) -> Element {
     let mut pinch_start = use_signal(|| None::<(f64, f32)>);
+    let mut hold_gen = use_signal(|| 0u64);
 
     rsx! {
         div {
@@ -52,6 +53,25 @@ pub fn Overlay(
                 }
             },
             ontouchend: move |_| pinch_start.set(None),
+
+            div {
+                id: "preview-zone",
+                ontouchstart: move |e| {
+                    let n = e.touches().len();
+                    hold_gen.with_mut(|g| *g += 1);
+                    if n == 1 {
+                        let my_gen = hold_gen();
+                        spawn(async move {
+                            tokio::time::sleep(std::time::Duration::from_millis(450)).await;
+                            if hold_gen() == my_gen {
+                                on_freeze_toggle.call(());
+                            }
+                        });
+                    }
+                },
+                ontouchmove: move |_| hold_gen.with_mut(|g| *g += 1),
+                ontouchend: move |_| hold_gen.with_mut(|g| *g += 1),
+            }
 
             div { id: "top-bar",
                 if caps.has_torch {

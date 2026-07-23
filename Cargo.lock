@@ -2554,6 +2554,7 @@ dependencies = [
  "serde_json",
  "sys-locale",
  "tao",
+ "tokio",
  "wry",
 ]
 
