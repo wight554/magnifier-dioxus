@@ -79,6 +79,7 @@ fn app() -> Element {
     let caps = use_signal(|| CamCaps {
         max_zoom: 8.0,
         has_torch: false,
+        has_macro: false,
     });
     let cfg = use_signal(|| settings::load(&settings::settings_path()));
     let mut zoom = use_signal(|| cfg.peek().default_zoom);
@@ -205,6 +206,17 @@ fn app() -> Element {
                                     cam.freeze();
                                     state.set(AppState::Frozen);
                                 }
+                            }
+                        },
+                        on_macro_changed: {
+                            let cam = cam.clone();
+                            move |_| {
+                                log::info!("magnifier: macro toggle changed, restarting camera");
+                                cam.stop();
+                                state.set(AppState::Loading);
+                                start_camera(cam.clone(), state, caps);
+                                cam.set_zoom(zoom());
+                                cam.set_torch(torch());
                             }
                         },
                     }

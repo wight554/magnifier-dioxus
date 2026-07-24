@@ -4,6 +4,7 @@ unfreeze: Resume
 settings: Settings
 default_zoom: Default zoom
 torch_on_launch: Torch on at launch
+use_macro: Macro lens
 close: Close
 need_camera: Camera permission required
 grant: Grant permission

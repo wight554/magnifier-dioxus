@@ -12,6 +12,7 @@ use std::sync::Arc;
 pub struct CamCaps {
     pub max_zoom: f32,
     pub has_torch: bool,
+    pub has_macro: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

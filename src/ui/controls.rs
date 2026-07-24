@@ -31,6 +31,7 @@ pub fn Overlay(
     show_settings: Signal<bool>,
     cfg: Signal<settings::Settings>,
     on_freeze_toggle: EventHandler<()>,
+    on_macro_changed: EventHandler<()>,
 ) -> Element {
     let mut pinch_start = use_signal(|| None::<(f64, f32)>);
     let mut hold_gen = use_signal(|| 0u64);
@@ -120,7 +121,7 @@ pub fn Overlay(
             }
 
             if show_settings() {
-                SettingsSheet { cfg, show_settings, caps }
+                SettingsSheet { cfg, show_settings, caps, on_macro_changed }
             }
         }
     }
@@ -139,7 +140,9 @@ fn SettingsSheet(
     cfg: Signal<settings::Settings>,
     show_settings: Signal<bool>,
     caps: CamCaps,
+    on_macro_changed: EventHandler<()>,
 ) -> Element {
+    let initial_use_macro = use_signal(|| cfg.peek().use_macro);
     rsx! {
         div { id: "settings-sheet",
             h2 { {i18n::t("settings")} }
@@ -172,10 +175,27 @@ fn SettingsSheet(
                     },
                 }
             }
+            if caps.has_macro {
+                label {
+                    {i18n::t("use_macro")}
+                    input {
+                        r#type: "checkbox",
+                        checked: cfg().use_macro,
+                        onchange: move |e| {
+                            let mut c = cfg();
+                            c.use_macro = e.checked();
+                            cfg.set(c);
+                        },
+                    }
+                }
+            }
             button {
                 class: "big-btn",
                 onclick: move |_| {
                     let _ = settings::save(&settings::settings_path(), &cfg());
+                    if cfg().use_macro != initial_use_macro() {
+                        on_macro_changed.call(());
+                    }
                     show_settings.set(false);
                 },
                 aria_label: i18n::t("close"),

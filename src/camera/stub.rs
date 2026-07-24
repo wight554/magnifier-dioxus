@@ -9,6 +9,7 @@ impl CameraController for StubCamera {
         let _ = events.unbounded_send(CameraEvent::Ready(CamCaps {
             max_zoom: 8.0,
             has_torch: true,
+            has_macro: false,
         }));
     }
     fn stop(&self) {
