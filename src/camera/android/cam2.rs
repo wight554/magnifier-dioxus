@@ -108,7 +108,14 @@ impl Cam2 {
                 ACameraMetadata_free(leftover_metadata);
             }
 
-            let mut info = Self::read_characteristics(metadata)?;
+            let mut info = match Self::read_characteristics(metadata) {
+                Ok(info) => info,
+                Err(e) => {
+                    ACameraMetadata_free(metadata);
+                    ACameraManager_delete(manager);
+                    return Err(e);
+                }
+            };
             info.has_macro = has_macro;
 
             let disconnected = Arc::new(AtomicBool::new(false));
