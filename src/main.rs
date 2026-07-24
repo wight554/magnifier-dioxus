@@ -81,8 +81,8 @@ fn app() -> Element {
         has_torch: false,
     });
     let cfg = use_signal(|| settings::load(&settings::settings_path()));
-    let zoom = use_signal(|| cfg.peek().default_zoom);
-    let torch = use_signal(|| cfg.peek().torch_on_launch);
+    let mut zoom = use_signal(|| cfg.peek().default_zoom);
+    let mut torch = use_signal(|| cfg.peek().torch_on_launch);
     let show_settings = use_signal(|| false);
 
     use_hook({
@@ -115,6 +115,14 @@ fn app() -> Element {
                         log::info!("magnifier: app resumed, restarting camera");
                         stopped_for_background.set(false);
                         state.set(AppState::Loading);
+                        // The restarted camera thread re-reads default_zoom/torch_on_launch
+                        // fresh from disk (see android/mod.rs) - reset these UI signals to
+                        // match, or the slider/torch button would keep showing whatever the
+                        // live value was before backgrounding instead of what actually got
+                        // (re-)applied.
+                        let fresh = settings::load(&settings::settings_path());
+                        zoom.set(fresh.default_zoom);
+                        torch.set(fresh.torch_on_launch);
                         start_camera(cam.clone(), state, caps);
                     }
                 }
