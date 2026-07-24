@@ -92,7 +92,10 @@ impl Cam2 {
 
             ACameraManager_deleteCameraIdList(id_list);
 
-            anyhow::ensure!(!candidates.is_empty(), "no back-facing camera found");
+            if candidates.is_empty() {
+                ACameraManager_delete(manager);
+                anyhow::bail!("no back-facing camera found");
+            }
 
             let has_macro = candidates.iter().any(|(_, _, is_macro)| *is_macro);
             let chosen_index = candidates
