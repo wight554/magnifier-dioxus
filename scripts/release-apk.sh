@@ -30,7 +30,7 @@ s = s.replace("REPLACED_AT_RELEASE_TIME_KEYPASS", keypass)
 p.write_text(s)
 PY
 
-dx bundle --platform android --release --package-types apk
+dx bundle --platform android --release --package-types apk --target aarch64-linux-android
 ./scripts/android-postprocess.sh release
 
 echo "Signed APK: target/dx/magnifier/release/android/app/app/build/outputs/apk/release/app-release.apk"
