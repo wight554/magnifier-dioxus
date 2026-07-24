@@ -1,4 +1,5 @@
 pub mod zoom;
+pub mod macro_lens;
 
 #[cfg(not(target_os = "android"))]
 mod stub;
