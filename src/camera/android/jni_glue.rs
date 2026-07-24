@@ -105,12 +105,18 @@ pub fn was_permission_asked_before() -> bool {
 
 const FLAG_KEEP_SCREEN_ON: i32 = 0x00000080;
 
+/// `Window.addFlags` mutates a live `ViewRootImpl` and Android enforces that this only
+/// happens on the UI thread (`CalledFromWrongThreadException` otherwise) - unlike the
+/// read-only JNI calls elsewhere in this file, this must go through wry's UI-thread
+/// dispatch, not the generic `with_jni` (which attaches whatever thread called it).
 pub fn keep_screen_on() {
-    let _ = with_jni(|env, activity| {
-        let window = env
-            .call_method(activity, "getWindow", "()Landroid/view/Window;", &[])?
-            .l()?;
-        env.call_method(&window, "addFlags", "(I)V", &[JValue::Int(FLAG_KEEP_SCREEN_ON)])?;
-        Ok(())
+    wry::prelude::dispatch(move |env, activity, _webview| {
+        let _: jni::errors::Result<()> = (|| {
+            let window = env
+                .call_method(activity, "getWindow", "()Landroid/view/Window;", &[])?
+                .l()?;
+            env.call_method(&window, "addFlags", "(I)V", &[JValue::Int(FLAG_KEEP_SCREEN_ON)])?;
+            Ok(())
+        })();
     });
 }
