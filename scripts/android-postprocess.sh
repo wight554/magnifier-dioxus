@@ -24,7 +24,8 @@ cp android-res/values-uk/strings.xml "${RES}/values-uk/strings.xml"
 
 if [ "$PROFILE" = "release" ]; then
     VERSION_CODE=$(git rev-list --count HEAD)
-    sed -i '' "s/versionCode = 1/versionCode = ${VERSION_CODE}/" "${ROOT}/app/build.gradle.kts"
+    # perl -pi -e (unlike sed -i) takes the identical form on both BSD/macOS and GNU/Linux.
+    perl -pi -e "s/versionCode = 1/versionCode = ${VERSION_CODE}/" "${ROOT}/app/build.gradle.kts"
 fi
 
 GRADLE_TASK="assembleDebug"

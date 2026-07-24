@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,8 +31,12 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-29" "build-tools;34.0.0" "ndk;27.0.12077973"
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
 
-      - name: Install dioxus-cli
-        run: cargo install dioxus-cli --version 0.7.9 --locked
+      - name: Install dioxus-cli (prebuilt binary, not compiled from source)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sL "https://github.com/DioxusLabs/dioxus/releases/download/v0.7.9/dx-x86_64-unknown-linux-gnu.tar.gz" | tar xz -C "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/dx"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run desktop test suite
         run: cargo test

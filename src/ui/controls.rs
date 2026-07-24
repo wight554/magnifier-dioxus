@@ -34,6 +34,7 @@ pub fn Overlay(
 ) -> Element {
     let mut pinch_start = use_signal(|| None::<(f64, f32)>);
     let mut hold_gen = use_signal(|| 0u64);
+    let mut held_via_gesture = use_signal(|| false);
 
     rsx! {
         div {
@@ -61,16 +62,24 @@ pub fn Overlay(
                     hold_gen.with_mut(|g| *g += 1);
                     if n == 1 {
                         let my_gen = hold_gen();
+                        let was_frozen = frozen;
                         spawn(async move {
                             tokio::time::sleep(std::time::Duration::from_millis(450)).await;
-                            if hold_gen() == my_gen {
+                            if hold_gen() == my_gen && !was_frozen {
+                                held_via_gesture.set(true);
                                 on_freeze_toggle.call(());
                             }
                         });
                     }
                 },
                 ontouchmove: move |_| hold_gen.with_mut(|g| *g += 1),
-                ontouchend: move |_| hold_gen.with_mut(|g| *g += 1),
+                ontouchend: move |_| {
+                    hold_gen.with_mut(|g| *g += 1);
+                    if held_via_gesture() {
+                        held_via_gesture.set(false);
+                        on_freeze_toggle.call(());
+                    }
+                },
             }
 
             div { id: "bottom-bar",
