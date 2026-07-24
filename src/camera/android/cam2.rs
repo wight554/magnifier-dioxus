@@ -16,6 +16,7 @@ macro_rules! ck {
 pub struct CamInfo {
     pub max_zoom: f32,
     pub has_torch: bool,
+    pub has_macro: bool,
     pub active_w: i32,
     pub active_h: i32,
     pub preview_w: i32,
@@ -46,7 +47,7 @@ unsafe extern "C" fn on_error(context: *mut c_void, _device: *mut ACameraDevice,
 }
 
 impl Cam2 {
-    pub fn open_back_camera() -> anyhow::Result<Cam2> {
+    pub fn open_back_camera(want_macro: bool) -> anyhow::Result<Cam2> {
         unsafe {
             let manager = ACameraManager_create();
             anyhow::ensure!(!manager.is_null(), "ACameraManager_create returned null");
@@ -58,8 +59,7 @@ impl Cam2 {
             );
             let ids = &*id_list;
 
-            let mut chosen_id: Option<CString> = None;
-            let mut chosen_metadata: *mut ACameraMetadata = std::ptr::null_mut();
+            let mut candidates: Vec<(CString, *mut ACameraMetadata, bool)> = Vec::new();
 
             for i in 0..ids.numCameras {
                 let id_ptr = *ids.cameraIds.offset(i as isize);
@@ -80,11 +80,11 @@ impl Cam2 {
                 );
                 let facing = *entry.data.u8_;
 
-                if facing == acamera_metadata_enum_acamera_lens_facing::ACAMERA_LENS_FACING_BACK.0 as u8
-                    && chosen_id.is_none()
-                {
-                    chosen_id = Some(CStr::from_ptr(id_ptr).to_owned());
-                    chosen_metadata = metadata;
+                if facing == acamera_metadata_enum_acamera_lens_facing::ACAMERA_LENS_FACING_BACK.0 as u8 {
+                    let is_macro = Self::is_macro_lens(metadata);
+                    let id = CStr::from_ptr(id_ptr).to_owned();
+                    log::info!("magnifier: back camera {id:?} is_macro={is_macro}");
+                    candidates.push((id, metadata, is_macro));
                 } else {
                     ACameraMetadata_free(metadata);
                 }
@@ -92,13 +92,21 @@ impl Cam2 {
 
             ACameraManager_deleteCameraIdList(id_list);
 
-            let Some(id) = chosen_id else {
-                ACameraManager_delete(manager);
-                anyhow::bail!("no back-facing camera found");
-            };
-            let metadata = chosen_metadata;
+            anyhow::ensure!(!candidates.is_empty(), "no back-facing camera found");
 
-            let info = Self::read_characteristics(metadata)?;
+            let has_macro = candidates.iter().any(|(_, _, is_macro)| *is_macro);
+            let chosen_index = candidates
+                .iter()
+                .position(|(_, _, is_macro)| *is_macro == want_macro)
+                .unwrap_or(0);
+
+            let (id, metadata, _) = candidates.remove(chosen_index);
+            for (_, leftover_metadata, _) in candidates {
+                ACameraMetadata_free(leftover_metadata);
+            }
+
+            let mut info = Self::read_characteristics(metadata)?;
+            info.has_macro = has_macro;
 
             let disconnected = Arc::new(AtomicBool::new(false));
             let ctx = Arc::into_raw(disconnected.clone()) as *mut c_void;
@@ -133,6 +141,43 @@ impl Cam2 {
                 info,
                 disconnected: Arc::into_raw(disconnected),
             })
+        }
+    }
+
+    unsafe fn is_macro_lens(metadata: *const ACameraMetadata) -> bool {
+        unsafe {
+            let mut focal_entry = std::mem::zeroed::<ACameraMetadata_const_entry>();
+            let focal_status = ACameraMetadata_getConstEntry(
+                metadata,
+                acamera_metadata_tag::ACAMERA_LENS_INFO_AVAILABLE_FOCAL_LENGTHS.0,
+                &mut focal_entry,
+            );
+            let min_focal = if focal_status == camera_status_t::ACAMERA_OK && focal_entry.count > 0 {
+                std::slice::from_raw_parts(focal_entry.data.f, focal_entry.count as usize)
+                    .iter()
+                    .cloned()
+                    .fold(f32::MAX, f32::min)
+            } else {
+                f32::MAX
+            };
+
+            let mut dist_entry = std::mem::zeroed::<ACameraMetadata_const_entry>();
+            let dist_status = ACameraMetadata_getConstEntry(
+                metadata,
+                acamera_metadata_tag::ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE.0,
+                &mut dist_entry,
+            );
+            let min_focus_distance = if dist_status == camera_status_t::ACAMERA_OK {
+                *dist_entry.data.f
+            } else {
+                0.0
+            };
+
+            log::info!(
+                "magnifier: lens characteristics focal_length={min_focal}mm min_focus_distance={min_focus_distance}diopters"
+            );
+
+            crate::camera::macro_lens::is_macro(min_focal, min_focus_distance)
         }
     }
 
@@ -211,6 +256,7 @@ impl Cam2 {
             Ok(CamInfo {
                 max_zoom,
                 has_torch,
+                has_macro: false,
                 active_w,
                 active_h,
                 preview_w,
