@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 pub struct Settings {
     pub default_zoom: f32,
     pub torch_on_launch: bool,
+    #[serde(default)]
+    pub use_macro: bool,
 }
 
 impl Default for Settings {
@@ -12,6 +14,7 @@ impl Default for Settings {
         Self {
             default_zoom: 2.0,
             torch_on_launch: false,
+            use_macro: false,
         }
     }
 }
@@ -55,6 +58,7 @@ mod tests {
         let s = Settings {
             default_zoom: 3.5,
             torch_on_launch: true,
+            use_macro: true,
         };
         save(&p, &s).unwrap();
         assert_eq!(load(&p), s);
@@ -75,5 +79,17 @@ mod tests {
         let p = dir.join("settings.json");
         std::fs::write(&p, "{not json").unwrap();
         assert_eq!(load(&p), Settings::default());
+    }
+
+    #[test]
+    fn missing_use_macro_key_defaults_false() {
+        let dir = std::env::temp_dir().join("magnifier-test-old-format");
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("settings.json");
+        std::fs::write(&p, r#"{"default_zoom":4.0,"torch_on_launch":true}"#).unwrap();
+        let loaded = load(&p);
+        assert_eq!(loaded.default_zoom, 4.0);
+        assert!(loaded.torch_on_launch);
+        assert!(!loaded.use_macro);
     }
 }
