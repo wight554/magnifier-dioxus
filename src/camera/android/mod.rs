@@ -70,7 +70,9 @@ impl CameraController for AndroidCamera {
             }
             log::info!("magnifier: camera permission granted");
 
-            let mut cam = match Cam2::open_back_camera() {
+            let settings = crate::settings::load(&crate::settings::settings_path());
+
+            let mut cam = match Cam2::open_back_camera(settings.use_macro) {
                 Ok(c) => c,
                 Err(e) => {
                     log::error!("magnifier: open_back_camera failed: {e:?}");
@@ -117,7 +119,6 @@ impl CameraController for AndroidCamera {
             }
             log::info!("magnifier: preview started");
 
-            let settings = crate::settings::load(&crate::settings::settings_path());
             let mut zoom_ratio = settings.default_zoom.clamp(1.0, max_zoom);
             let mut torch_on = settings.torch_on_launch && info.has_torch;
             let mut frozen = false;
@@ -129,10 +130,14 @@ impl CameraController for AndroidCamera {
                 return;
             }
 
-            log::info!("magnifier: sending Ready event, max_zoom={max_zoom} has_torch={}", info.has_torch);
+            log::info!(
+                "magnifier: sending Ready event, max_zoom={max_zoom} has_torch={} has_macro={}",
+                info.has_torch, info.has_macro
+            );
             let _ = events.unbounded_send(CameraEvent::Ready(CamCaps {
                 max_zoom,
                 has_torch: info.has_torch,
+                has_macro: info.has_macro,
             }));
 
             loop {
